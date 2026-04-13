@@ -17,8 +17,8 @@ export var RUNTIME_CACHE_KEY = Date.now().toString(36);
 // SUSFS 兼容性：sublevel >= 阈值表示可直接使用 susfs4ksu 补丁
 export var SUSFS_COMPAT_MIN = {
   '5.10': 218,
-  '5.15': 144,
-  '6.1': 141,
-  '6.6': 92,
+  '5.15': 148,
+  '6.1': 145,
+  '6.6': 98,
   '6.12': 0,
 };

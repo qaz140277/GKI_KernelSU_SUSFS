@@ -18,13 +18,9 @@ English | [**简体中文**](README.md)
 
 ## 🚀 Quick Navigation
 
-<table>
-<tr>
-<td align="center" width="33%">📖 <b><a href="https://github.com/zzh20188/GKI_KernelSU_SUSFS/wiki">Documentation</a></b></td>
-<td align="center" width="34%">📥 <b><a href="https://github.com/zzh20188/GKI_KernelSU_SUSFS/releases">Downloads</a></b></td>
-<td align="center" width="33%">🔰 <b><a href="https://github.com/zzh20188/GKI_KernelSU_SUSFS/wiki/Fork%E4%B8%8E%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BC%96%E8%AF%91%E6%8C%87%E5%8D%97">Beginner Custom Build Guide</a></b></td>
-</tr>
-</table>
+- 📖 [Documentation](https://github.com/zzh20188/GKI_KernelSU_SUSFS/wiki)
+- 📥 [Downloads](https://github.com/zzh20188/GKI_KernelSU_SUSFS/releases)
+- 🔰 [Tutorial](https://zzh20188.github.io/GKI_KernelSU_SUSFS/guide.html)
 
 ---
 
@@ -32,11 +28,7 @@ English | [**简体中文**](README.md)
 
 > **Note:** OnePlus ColorOS 14/15 is currently not supported. A data wipe may be required after flashing.
 
-> **ReSukiSU: ReSukiSU updates more frequently than SukiSU. If SukiSU errors occur, try ReSukiSU instead.**
->
-> **Default variant has been switched to ReSukiSU**
-
-> **Android 16: Android 16 - 6.12 kernel version is now supported**
+> **rekernel feature (beta): rekernel feature is now supported (currently in beta)**
 
 
 ---
@@ -46,7 +38,7 @@ English | [**简体中文**](README.md)
 For detailed instructions, please refer to the [**GitHub Wiki (bilingual CN/EN)**](https://github.com/zzh20188/GKI_KernelSU_SUSFS/wiki)
 
 Wiki covers:
-- [**🔰 Beginner's Guide**](https://github.com/zzh20188/GKI_KernelSU_SUSFS/wiki/Fork%E4%B8%8E%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BC%96%E8%AF%91%E6%8C%87%E5%8D%97)
+- [**🔰 Tutorial**](https://zzh20188.github.io/GKI_KernelSU_SUSFS/guide.html)
 - 📥 Download / Flash kernel
 - 💡 Tips & Tricks
 - 🆘 Brick Recovery Guide
@@ -58,8 +50,8 @@ Wiki covers:
 
 When the following two branches update at different paces, builds may fail:
 
-- SukiSU builtin branch: <https://github.com/SukiSU-Ultra/SukiSU-Ultra/tree/builtin>
-- SUSFS gki-android14-6.1 branch: <https://gitlab.com/simonpunk/susfs4ksu/-/tree/gki-android14-6.1?ref_type=heads>
+- [SukiSU builtin branch](https://github.com/SukiSU-Ultra/SukiSU-Ultra/tree/builtin)
+- [SUSFS gki-android14-6.1 branch](https://gitlab.com/simonpunk/susfs4ksu/-/tree/gki-android14-6.1?ref_type=heads)
 
 For example: SUSFS just pushed a new commit, but SukiSU's `builtin` branch hasn't caught up yet — patching/compiling will likely fail.
 
@@ -82,8 +74,8 @@ A commit is a hash string representing the state of a repository at a specific p
 
 **How to get a commit hash?**
 
-- SUSFS: https://gitlab.com/simonpunk/susfs4ksu
-- SukiSU: https://github.com/SukiSU-Ultra/SukiSU-Ultra/commits/builtin/
+- SUSFS: [susfs4ksu](https://gitlab.com/simonpunk/susfs4ksu)
+- SukiSU: [SukiSU-Ultra commits/builtin](https://github.com/SukiSU-Ultra/SukiSU-Ultra/commits/builtin/)
 
 Taking SUSFS as an example, first select the branch, then copy the commit hash:
 

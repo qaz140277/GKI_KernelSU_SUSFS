@@ -23,9 +23,13 @@
   background: var(--bg-surface);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, transform 0.2s ease, box-shadow 0.2s ease;
 
-  &:hover { border-color: var(--border); }
+  &:hover {
+    border-color: var(--border);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
 
   @include mobile {
     flex: 1;

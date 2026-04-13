@@ -19,8 +19,20 @@
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  position: relative;
 
   &::-webkit-scrollbar { display: none; }
+}
+
+// 标签页滑动指示器
+.tab-indicator {
+  position: absolute;
+  bottom: 0;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
 }
 
 .tab {
@@ -41,17 +53,6 @@
 
   &.active {
     color: var(--accent);
-
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 1rem;
-      right: 1rem;
-      height: 2px;
-      background: var(--accent);
-      border-radius: 2px 2px 0 0;
-    }
   }
 
   @include mobile {

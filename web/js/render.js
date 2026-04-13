@@ -12,6 +12,12 @@ import { showModal } from './modal.js';
 export function renderTabs(datasets) {
   var tabsEl = document.getElementById('tabs');
   tabsEl.innerHTML = '';
+
+  // 创建滑动指示器
+  var indicator = document.createElement('div');
+  indicator.className = 'tab-indicator';
+  tabsEl.appendChild(indicator);
+
   datasets.forEach(function (ds, idx) {
     var btn = document.createElement('button');
     btn.className = 'tab';
@@ -28,6 +34,16 @@ function activateTab(btn) {
   btn.classList.add('active');
   var panel = document.getElementById(btn.dataset.panel);
   if (panel) panel.classList.add('active');
+  moveIndicator(btn);
+}
+
+// 滑动指示器定位
+function moveIndicator(tab) {
+  var indicator = document.querySelector('.tab-indicator');
+  if (!indicator || !tab) return;
+  var padding = parseFloat(getComputedStyle(tab).paddingLeft) || 16;
+  indicator.style.left = (tab.offsetLeft + padding) + 'px';
+  indicator.style.width = (tab.offsetWidth - padding * 2) + 'px';
 }
 
 // ---- 面板渲染 ----
@@ -42,6 +58,11 @@ export function renderPanels(datasets) {
     panel.id = 'panel-' + idx;
     panel.innerHTML = buildCard(ds.data, ds.meta);
     content.appendChild(panel);
+
+    // 表格行交错入场延迟
+    panel.querySelectorAll('tbody tr').forEach(function (tr, i) {
+      tr.style.animationDelay = (i * 20) + 'ms';
+    });
   });
 }
 
@@ -151,4 +172,56 @@ function buildCard(data, meta) {
         '</div>' +
       '</div>' +
     '</div>';
+}
+
+// ---- 统计数字计数动画 ----
+
+export function animateCounters(panel) {
+  panel.querySelectorAll('.stat-value').forEach(function (el) {
+    var text = el.textContent.trim();
+    // 仅对纯整数值执行计数动画，跳过日期和内核版本
+    if (!/^\d+$/.test(text)) return;
+    var target = parseInt(text, 10);
+    if (target <= 0) return;
+
+    var start = 0;
+    var duration = 600;
+    var startTime = null;
+
+    function step(ts) {
+      if (!startTime) startTime = ts;
+      var progress = Math.min((ts - startTime) / duration, 1);
+      var ease = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(start + (target - start) * ease);
+      if (progress < 1) requestAnimationFrame(step);
+    }
+
+    el.textContent = '0';
+    requestAnimationFrame(step);
+  });
+}
+
+// ---- 行点击涟漪效果 ----
+// 注意：<tr> 不支持 position:relative 和 overflow:hidden，
+// 因此将涟漪 span 挂载到被点击的 <td> 上
+
+export function initRipple() {
+  document.addEventListener('click', function (e) {
+    var row = e.target.closest('tr.row-clickable');
+    if (!row) return;
+
+    var td = e.target.closest('td');
+    if (!td) return;
+
+    var rect = td.getBoundingClientRect();
+    var size = Math.max(rect.width, rect.height);
+    var ripple = document.createElement('span');
+    ripple.className = 'row-ripple';
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+    ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+    td.appendChild(ripple);
+
+    ripple.addEventListener('animationend', function () { ripple.remove(); });
+  });
 }

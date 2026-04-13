@@ -45,6 +45,7 @@ const I18N = {
     noResults: 'No matching results',
     newBadge: 'NEW',
     susfsCompat: 'SUSFS',
+    guide: 'Guide',
   },
   zh: {
     title: 'GKI \u5185\u6838\u7248\u672c',
@@ -88,6 +89,7 @@ const I18N = {
     noResults: '\u65e0\u5339\u914d\u7ed3\u679c',
     newBadge: '\u6700\u65b0',
     susfsCompat: 'SUSFS\u517c\u5bb9',
+    guide: '教程',
   },
 };
 
@@ -112,6 +114,7 @@ export function initI18n() {
   document.getElementById('tcDateLabel').textContent = t.tcDate;
   document.getElementById('tcTimeLabel').textContent = t.tcTime;
   document.getElementById('tcCopy').textContent = t.copy;
+  document.getElementById('guideLabel').textContent = t.guide;
   document.title = t.title;
 
   // 语言切换按钮

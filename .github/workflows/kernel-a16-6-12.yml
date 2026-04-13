@@ -13,7 +13,7 @@ on:
         type: choice
         options:
           - Official
-          - Next
+          #- Next
           - MKSU
           - SukiSU
           - ReSukiSU
@@ -40,17 +40,22 @@ on:
         description: "启用 ZRAM 增强算法"
         required: true
         type: boolean
-        default: true
+        default: false
       use_bbg:
         description: "启用 BBG 防格机"
         required: true
         type: boolean
-        default: true
+        default: false
       use_kpm:
         description: "启用 KPM 功能"
         required: true
         type: boolean
-        default: true
+        default: false
+      use_rekernel:
+        description: "启用 Re-Kernel 驱动"
+        required: false
+        type: boolean
+        default: false
       cancel_susfs:
         description: "禁用 SUSFS"
         required: true
@@ -85,6 +90,10 @@ on:
       use_kpm:
         required: true
         type: boolean
+      use_rekernel:
+        required: false
+        type: boolean
+        default: false
       cancel_susfs:
         required: false
         type: boolean
@@ -112,8 +121,8 @@ jobs:
             os_patch_level: "2025-09"
           - sub_level: "58"
             os_patch_level: "2025-12"
-          - sub_level: "X"
-            os_patch_level: "lts"
+          # - sub_level: "X"
+          #   os_patch_level: "lts"
     uses: ./.github/workflows/build.yml
     secrets: inherit
     with:
@@ -128,6 +137,7 @@ jobs:
       use_zram: false
       use_bbg: ${{ inputs.use_bbg }}
       use_kpm: ${{ inputs.use_kpm }}
+      use_rekernel: ${{ inputs.use_rekernel || false }}
       supp_op: ${{ inputs.supp_op || false }}
       enable_susfs: ${{ !inputs.cancel_susfs }}
 

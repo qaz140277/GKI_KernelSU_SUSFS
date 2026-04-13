@@ -65,6 +65,11 @@ tr.row-deprecated {
   td.kernel-version { color: var(--warn); }
 }
 
+// 表格行交错入场动画（纯 opacity，避免 transform 破坏 border-collapse）
+tbody tr {
+  animation: rowFadeIn 0.35s ease both;
+}
+
 // 可点击行
 tr.row-clickable {
   cursor: pointer;
@@ -72,6 +77,20 @@ tr.row-clickable {
 
   &:hover { background: var(--accent-bg) !important; }
   &:active { background: var(--accent-bg-hover) !important; }
+
+  td {
+    position: relative;
+  }
+}
+
+// 行点击涟漪效果
+.row-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.15;
+  pointer-events: none;
+  animation: rippleExpand 0.5s ease-out forwards;
 }
 
 // ===== 双列表格布局 =====

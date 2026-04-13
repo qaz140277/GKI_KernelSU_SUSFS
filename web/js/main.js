@@ -16,7 +16,7 @@ import { initBackToTop } from './back-to-top.js';
 import { showToast } from './toast.js';
 import { copyText, fetchJsonFresh } from './utils.js';
 import { DATA_FILES } from './config.js';
-import { renderTabs, renderPanels } from './render.js';
+import { renderTabs, renderPanels, animateCounters, initRipple } from './render.js';
 
 // 初始化各模块
 initI18n();
@@ -71,10 +71,15 @@ async function loadData() {
 
   renderTabs(datasets);
   renderPanels(datasets);
+  initRipple();
 
-  // 激活第一个标签页
+  // 激活第一个标签页并触发计数动画
   var firstTab = document.querySelector('.tab');
-  if (firstTab) firstTab.click();
+  if (firstTab) {
+    firstTab.click();
+    var firstPanel = document.querySelector('.tab-panel.active');
+    if (firstPanel) animateCounters(firstPanel);
+  }
 }
 
 // 启动

@@ -39,7 +39,7 @@ function renderInlineMarkdown(text) {
     return '\u0000CODE' + (codeTokens.length - 1) + '\u0000';
   });
 
-  html = html.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/gi, function (_, label, url) {
+  html = html.replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g, function (_, label, url) {
     return '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + label + '</a>';
   });
   html = html.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');

@@ -79,7 +79,8 @@
 
 .lang-toggle,
 .theme-toggle,
-.github-link {
+.github-link,
+.guide-link {
   @include header-btn;
 
   @include mobile {
