@@ -52,8 +52,8 @@ on:
         default: true
       use_kpm:
         required: true
-        type: boolean
-        default: true
+        type: string
+        default: "disabled (关闭)"
       use_rekernel:
         required: false
         type: boolean
@@ -66,6 +66,10 @@ on:
         required: false
         type: boolean
         default: false
+      droidspaces:
+        required: false
+        type: string
+        default: "off"
 
 jobs:
   build-kernel:
@@ -96,6 +100,7 @@ jobs:
           echo "BBG 补丁      : ${{ inputs.use_bbg }}"
           echo "KPM 功能      : ${{ inputs.use_kpm }}"
           echo "Re-Kernel     : ${{ inputs.use_rekernel }}"
+          echo "Droidspaces   : ${{ inputs.droidspaces }}"
           echo "Stock Config  : 自动检测 config/stock_defconfig"
           echo "========================================"
 
@@ -362,13 +367,13 @@ jobs:
                 case "$variant_input" in
                   "Next") ;;
                   "SukiSU") BRANCH="-s builtin" ;;
-                  "Official"|"MKSU") BRANCH="-s main" ;;
+                  "Official") BRANCH="-s main" ;;
                   *) BRANCH="-" ;;
                 esac
                 ;;
               "Dev(开发)")
                 case "$variant_input" in
-                  "Official"|"MKSU") BRANCH="-s main" ;;
+                  "Official") BRANCH="-s main" ;;
                   "Next") ;;
                   "SukiSU") BRANCH="-s builtin" ;;
                   *) echo "未知变体: $variant_input" >&2; exit 1 ;;
@@ -423,20 +428,6 @@ jobs:
             "Next")
               echo "添加 KernelSU-Next..."
               curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/dev/kernel/setup.sh" | bash -s dev_susfs
-              ;;
-            "MKSU")
-              echo "添加 MKSU..."
-              curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
-
-              cd KernelSU
-              KSU_GIT_VERSION=$(git rev-list --count HEAD)
-              KSU_VERSION=$((20000 + KSU_GIT_VERSION))
-              echo "KSU_VERSION=$KSU_VERSION" >> $GITHUB_ENV
-
-              if [ -f "kernel/Kbuild" ]; then
-                sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Kbuild
-              fi
-              cd ..
               ;;
             "SukiSU")
               echo "添加 SukiSU..."
@@ -529,7 +520,7 @@ jobs:
           cp $SUSFS4KSU/kernel_patches/include/linux/* ./common/include/linux/
 
           case "${{ inputs.ksu_variant }}" in
-            "Official"|"MKSU")
+            "Official")
               cd ./KernelSU
               cp $SUSFS4KSU/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./
               # 兼容旧版补丁：仅当补丁仍只修改 kernel/Makefile 时，才替换为 kernel/Kbuild
@@ -538,38 +529,6 @@ jobs:
                 sed -i 's|kernel/Makefile|kernel/Kbuild|g' ./10_enable_susfs_for_ksu.patch
               fi
               patch -p1 --forward < 10_enable_susfs_for_ksu.patch || true
-
-              # 仅 MKSU: 修复 SUSFS 补丁与最新 KernelSU 代码重构不兼容导致的 include 路径问题
-              # MKSU 的 setup.sh clone 的是 tiann/KernelSU（新版子目录结构），
-              # 但补丁中的 .c/.h 修改 hunks 因上下文已变化而静默失败，需要手动修复
-              if [ "${{ inputs.ksu_variant }}" == "MKSU" ]; then
-                KBUILD_FILE="kernel/Kbuild"
-                KSU_KERNEL_DIR="kernel"
-
-                # 确保 Kbuild 有正确的 include 搜索路径
-                if [ -f "$KBUILD_FILE" ] && ! grep -qF '-I$(src)/include' "$KBUILD_FILE"; then
-                  sed -i '/ccflags-y += -I$(srctree)\/security\/selinux/a ccflags-y += -I$(src) -I$(src)/include' "$KBUILD_FILE"
-                  echo "已添加 -I\$(src)/include 到 Kbuild"
-                fi
-
-                # 修复 feature/ 和 core/ 下源文件中未被补丁更新的 include 路径
-                find "$KSU_KERNEL_DIR" \( -name '*.c' -o -name '*.h' \) | while read -r f; do
-                  if echo "$f" | grep -qv '/include/'; then
-                    if grep -q '#include "klog.h"' "$f"; then
-                      sed -i 's|#include "klog.h"|#include "include/klog.h"|g' "$f"
-                      echo "修复 include 路径: $f (klog.h)"
-                    fi
-                    if grep -q '#include "ksu.h"' "$f"; then
-                      sed -i 's|#include "ksu.h"|#include "include/ksu.h"|g' "$f"
-                      echo "修复 include 路径: $f (ksu.h)"
-                    fi
-                    if grep -q '#include "arch.h"' "$f"; then
-                      sed -i 's|#include "arch.h"|#include "include/arch.h"|g' "$f"
-                      echo "修复 include 路径: $f (arch.h)"
-                    fi
-                  fi
-                done
-              fi
 
               cd ..
               ;;
@@ -581,7 +540,7 @@ jobs:
           cd $KERNEL_ROOT/common
           patch -p1 < 50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
 
-          if [ "${{ inputs.ksu_variant }}" == "Official" ] || [ "${{ inputs.ksu_variant }}" == "MKSU" ] || [ "${{ inputs.ksu_variant }}" == "Next" ] || [ "${{ inputs.ksu_variant }}" == "SukiSU" ] || [ "${{ inputs.ksu_variant }}" == "ReSukiSU" ]; then
+          if [ "${{ inputs.ksu_variant }}" == "Official" ] || [ "${{ inputs.ksu_variant }}" == "Next" ] || [ "${{ inputs.ksu_variant }}" == "SukiSU" ] || [ "${{ inputs.ksu_variant }}" == "ReSukiSU" ]; then
             CURRENT_SUB="${{ inputs.sub_level }}"
             if [[ ! "$CURRENT_SUB" =~ ^[0-9]+$ ]]; then
               CURRENT_SUB=99999
@@ -589,6 +548,10 @@ jobs:
 
             # Android 12 - 5.10 修复
             if [[ "${{ inputs.android_version }}" == "android12" && "${{ inputs.kernel_version }}" == "5.10" ]]; then
+              # 修复 2024-11 分支: mmap.c 调用了 vm_flags_clear()，但同分支 mm.h 未提供 helper
+              if [[ "${{ inputs.os_patch_level }}" == "2024-11" ]] && grep -qF 'vm_flags_clear(new_vma, VM_PAD_MASK);' ./mm/mmap.c; then
+                sed -i 's/vm_flags_clear(new_vma, VM_PAD_MASK);/new_vma->vm_flags \&= ~VM_PAD_MASK;/' ./mm/mmap.c
+              fi
               if [[ "$CURRENT_SUB" -le 209 ]]; then
                 sed -i -e 's/goto show_pad;/return 0;/' ./fs/proc/task_mmu.c
               fi
@@ -604,6 +567,10 @@ jobs:
 
             # Android 13 - 5.15 修复
             if [[ "${{ inputs.android_version }}" == "android13" && "${{ inputs.kernel_version }}" == "5.15" ]]; then
+              # 修复 2024-11 分支: mmap.c 调用了 vm_flags_clear()，但同分支 mm.h 未提供 helper
+              if [[ "${{ inputs.os_patch_level }}" == "2024-11" ]] && grep -qF 'vm_flags_clear(new_vma, VM_PAD_MASK);' ./mm/mmap.c; then
+                sed -i 's/vm_flags_clear(new_vma, VM_PAD_MASK);/new_vma->vm_flags \&= ~VM_PAD_MASK;/' ./mm/mmap.c
+              fi
               if [[ "$CURRENT_SUB" -le 41 ]]; then
                 cp $KERNEL_PATCHES/wild/susfs_fix_patches/v${SUSFS_VERSION}/a13-5.15/namespace.c.patch ./
                 patch -p1 < namespace.c.patch || true
@@ -623,11 +590,12 @@ jobs:
                 cp $KERNEL_PATCHES/wild/susfs_fix_patches/v${SUSFS_VERSION}/a14-6.1/base.c.patch ./
                 patch -p1 < base.c.patch || true
               fi
-              if ! grep -qF '#include <linux/dma-buf.h>' ./fs/proc/base.c; then
-                sed -i '/#include <linux\/cpufreq_times.h>/a #include <linux\/dma-buf.h>' ./fs/proc/base.c
-              fi
-              if grep -q 'susfs_is_current_proc_umounted' ./fs/proc/base.c && ! grep -qF '#include <linux/susfs.h>' ./fs/proc/base.c; then
-                sed -i '/#include <linux\/dma-buf.h>/a #include <linux\/susfs.h>' ./fs/proc/base.c
+              if grep -q 'susfs_is_current_proc_umounted\|SUSFS_IS_INODE_SUS_MAP\|SUSFS_IS_INODE_OPEN_REDIRECT' ./fs/proc/base.c && ! grep -qF '#include <linux/susfs_def.h>' ./fs/proc/base.c; then
+                if grep -qF '#include <linux/dma-buf.h>' ./fs/proc/base.c; then
+                  sed -i '/#include <linux\/dma-buf.h>/a #if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)\n#include <linux\/susfs_def.h>\n#endif' ./fs/proc/base.c
+                else
+                  sed -i '/#include <linux\/cpufreq_times.h>/a #if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)\n#include <linux\/susfs_def.h>\n#endif' ./fs/proc/base.c
+                fi
               fi
               if [[ "$CURRENT_SUB" -le 75 && "${{ inputs.os_patch_level }}" != "2024-05" ]]; then
                 sed -i -e 's/goto show_pad;/return 0;/' ./fs/proc/task_mmu.c
@@ -638,7 +606,7 @@ jobs:
                 echo "检测到 namespace.c 缺少 susfs_def.h，注入声明..."
                 sed -i '/#include <linux\/mnt_idmapping.h>/a #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT\n#include <linux\/susfs_def.h>\n#endif' ./fs/namespace.c
                 if ! grep -q 'extern bool susfs_is_current_ksu_domain' ./fs/namespace.c; then
-                  sed -i '/#include "internal.h"/a \\n#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT\nextern bool susfs_is_current_ksu_domain(void);\nextern bool susfs_is_sdcard_android_data_decrypted __read_mostly;\n\n#define CL_COPY_MNT_NS BIT(25)\n\nstatic DEFINE_IDA(susfs_mnt_id_ida);\nstatic DEFINE_IDA(susfs_mnt_group_ida);\n\n#endif' ./fs/namespace.c
+                  sed -i '/#include "internal.h"/a \\n#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT\nextern bool susfs_is_current_ksu_domain(void);\nextern struct static_key_true susfs_is_sdcard_android_data_not_decrypted;\n\n#define CL_COPY_MNT_NS BIT(25)\n\n#endif' ./fs/namespace.c
                 fi
               fi
             fi
@@ -649,21 +617,14 @@ jobs:
                 cp $KERNEL_PATCHES/wild/susfs_fix_patches/v${SUSFS_VERSION}/a15-6.6/base.c.patch ./
                 patch -p1 < base.c.patch || true
               fi
-              # 修复 6.6.50~6.6.97: 缺少 susfs_def.h 导致编译报 undeclared identifier
-              if grep -q 'AS_FLAGS_SUS_MAP\|susfs_is_current_proc_umounted' ./fs/proc/base.c && ! grep -qF 'susfs_def.h' ./fs/proc/base.c; then
+              # 修复 6.6.50~6.6.97: fs/proc/base.c 头部 hunk 失配，导致 susfs_def.h 漏打
+              if grep -q 'AS_FLAGS_SUS_MAP\|susfs_is_current_proc_umounted\|SUSFS_IS_INODE_SUS_MAP\|SUSFS_IS_INODE_OPEN_REDIRECT' ./fs/proc/base.c && ! grep -qF 'susfs_def.h' ./fs/proc/base.c; then
                 if ! grep -qF '#include <linux/dma-buf.h>' ./fs/proc/base.c; then
                   sed -i '/#include <linux\/cpufreq_times.h>/a #include <linux\/dma-buf.h>' ./fs/proc/base.c
                 fi
                 sed -i '/#include <linux\/dma-buf.h>/a #endif' ./fs/proc/base.c
                 sed -i '/#include <linux\/dma-buf.h>/a #include <linux\/susfs_def.h>' ./fs/proc/base.c
-                sed -i '/#include <linux\/dma-buf.h>/a #ifdef CONFIG_KSU_SUSFS_SUS_MAP' ./fs/proc/base.c
-              fi
-              # 修复 ReSukiSU: 缺少 susfs.h 导致编译报 undeclared identifier
-              if grep -q 'SUSFS_IS_INODE_SUS_MAP\|SUSFS_IS_INODE_OPEN_REDIRECT' ./fs/proc/base.c && ! grep -qF '#include <linux/susfs.h>' ./fs/proc/base.c; then
-                if ! grep -qF '#include <linux/dma-buf.h>' ./fs/proc/base.c; then
-                  sed -i '/#include <linux\/cpufreq_times.h>/a #include <linux\/dma-buf.h>' ./fs/proc/base.c
-                fi
-                sed -i '/#include <linux\/dma-buf.h>/a #include <linux\/susfs.h>' ./fs/proc/base.c
+                sed -i '/#include <linux\/dma-buf.h>/a #if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)' ./fs/proc/base.c
               fi
               if [[ "$CURRENT_SUB" -le 58 ]]; then
                 cp $KERNEL_PATCHES/wild/susfs_fix_patches/v${SUSFS_VERSION}/a15-6.6/task_mmu.c.patch ./
@@ -679,8 +640,128 @@ jobs:
                 sed -i 's/defined(CONFIG_KSU_MANUAL_HOOK))/!defined(CONFIG_KSU_SUSFS) \&\& defined(CONFIG_KSU_MANUAL_HOOK))/' "$SETUID_HOOK"
                 echo "已修复 setuid_hook.c 重复定义问题"
               fi
+
+              # 修复 6.12.58+: exec.c 头部上下文变化导致 SUSFS 补丁漏掉 susfs_def.h
+              if grep -q 'susfs_is_current_proc_umounted' ./fs/exec.c && ! grep -qF '#include <linux/susfs_def.h>' ./fs/exec.c; then
+                if grep -qF '#include <linux/dma-buf.h>' ./fs/exec.c; then
+                  sed -i '/#include <linux\/dma-buf.h>/a #ifdef CONFIG_KSU_SUSFS\n#include <linux\/susfs_def.h>\n#endif' ./fs/exec.c
+                else
+                  sed -i '/#include <linux\/ksm.h>/a #ifdef CONFIG_KSU_SUSFS\n#include <linux\/susfs_def.h>\n#endif' ./fs/exec.c
+                fi
+                echo "已修复 exec.c 缺少 susfs_def.h 问题"
+              fi
             fi
           fi
+
+      - name: 克隆 Droidspaces 补丁仓库
+        if: inputs.droidspaces != 'off'
+        run: |
+          git clone --depth 1 https://github.com/ravindu644/Droidspaces-OSS.git /tmp/Droidspaces-OSS
+          echo "DROIDSPACES_PATCHES=/tmp/Droidspaces-OSS/Documentation/resources/kernel-patches/GKI" >> $GITHUB_ENV
+
+      - name: 备份基准 defconfig
+        run: cp "$DEFCONFIG" "$DEFCONFIG.orig"
+
+      - name: 集成 Droidspaces 支持
+        if: inputs.droidspaces != 'off'
+        working-directory: ${{ env.KERNEL_ROOT }}/common
+        run: |
+          KERNEL_VER="${{ inputs.kernel_version }}"
+          SLOT="${{ inputs.droidspaces }}"
+
+          # 678 -> 6_7_8, 123 -> 1_2_3, 345 -> 3_4_5
+          SLOT_NAME=$(echo "$SLOT" | sed 's/\(.\)/\1_/g; s/_$//')
+          echo "应用 Droidspaces SYSVIPC kABI 修复补丁 (槽位: $SLOT / $SLOT_NAME)..."
+          case "$KERNEL_VER" in
+            6.12)
+              PATCH_FILE="$DROIDSPACES_PATCHES/kernel-6.12/001.GKI-6.12-or-above-fix_sysvipc_kabi.patch"
+              ;;
+            5.10|5.15|6.1|6.6)
+              PATCH_FILE="$DROIDSPACES_PATCHES/below-kernel-6.12/001.GKI-below-6.12-fix_sysvipc_kabi_${SLOT_NAME}.patch"
+              ;;
+            *)
+              echo "::warning::Droidspaces: 未适配的内核版本 $KERNEL_VER，跳过补丁"
+              exit 0
+              ;;
+          esac
+          if ! patch -p1 --forward < "$PATCH_FILE"; then
+            echo "::warning::SYSVIPC kABI 补丁应用失败，可能已应用或上下文不匹配"
+          fi
+
+          # 5.10 及以下还需要 POSIX_MQUEUE 的 kABI 修复
+          if [ "$KERNEL_VER" = "5.10" ]; then
+            echo "应用 Droidspaces POSIX_MQUEUE kABI 修复补丁 (5.10)..."
+            POSIX_PATCH="$DROIDSPACES_PATCHES/below-kernel-6.12/002.5.10_or_lower_use_android_abi_padding_for_posix_mqueue.patch"
+            if ! patch -p1 --forward < "$POSIX_PATCH"; then
+              echo "::warning::POSIX_MQUEUE kABI 补丁应用失败，可能已应用或上下文不匹配"
+            fi
+          fi
+
+          # Android 16 / 6.12 的 rust_binder.ko 在启用 IPC_NS 后会引用
+          # init_ipc_ns 与 put_ipc_ns，但当前 AOSP common 分支尚未导出这两个符号。
+          # 这里补齐导出，避免 modpost 因 undefined symbol 失败。
+          if [ "$KERNEL_VER" = "6.12" ]; then
+            if [ -f "ipc/msgutil.c" ] && ! grep -qF 'EXPORT_SYMBOL(init_ipc_ns);' "ipc/msgutil.c"; then
+              sed -i '/^struct msg_msgseg {/i EXPORT_SYMBOL(init_ipc_ns);' "ipc/msgutil.c"
+              echo "已为 init_ipc_ns 补充符号导出"
+            fi
+
+            if [ -f "ipc/namespace.c" ] && ! grep -qF 'EXPORT_SYMBOL(put_ipc_ns);' "ipc/namespace.c"; then
+              sed -i '/^static struct ns_common \*ipcns_get(/i EXPORT_SYMBOL(put_ipc_ns);' "ipc/namespace.c"
+              echo "已为 put_ipc_ns 补充符号导出"
+            fi
+          fi
+
+          echo "添加 Droidspaces 内核配置..."
+          # 按文档规则逐个处理: 已启用则跳过, "# not set" 则替换, 不存在则追加
+          enable_config() {
+            local cfg="$1"
+            if grep -q "^${cfg}=y" "$DEFCONFIG"; then
+              echo "  已启用: $cfg"
+            elif grep -q "^# ${cfg} is not set" "$DEFCONFIG"; then
+              sed -i "s/^# ${cfg} is not set$/${cfg}=y/" "$DEFCONFIG"
+              echo "  已切换: $cfg"
+            else
+              echo "${cfg}=y" >> "$DEFCONFIG"
+              echo "  已添加: $cfg"
+            fi
+          }
+
+          config_defined() {
+            local name="${1#CONFIG_}"
+            grep -RqsE --include='Kconfig*' "^[[:space:]]*(menuconfig|config)[[:space:]]+${name}$" .
+          }
+
+          enable_config_if_defined() {
+            local cfg="$1"
+            if config_defined "$cfg"; then
+              enable_config "$cfg"
+            else
+              echo "  当前内核未定义: $cfg，跳过"
+            fi
+          }
+
+          # 必要配置
+          enable_config CONFIG_SYSVIPC
+          enable_config CONFIG_POSIX_MQUEUE
+          enable_config CONFIG_IPC_NS
+          enable_config CONFIG_PID_NS
+          enable_config CONFIG_DEVTMPFS
+
+          # 可选: 网络相关配置 (Docker/NAT 模式)
+          enable_config_if_defined CONFIG_NETFILTER_XT_MATCH_ADDRTYPE
+          enable_config_if_defined CONFIG_NETFILTER_XT_TARGET_LOG
+          enable_config_if_defined CONFIG_NETFILTER_XT_MATCH_RECENT
+          enable_config_if_defined CONFIG_IP_SET
+          enable_config_if_defined CONFIG_IP_SET_HASH_IP
+          enable_config_if_defined CONFIG_IP_SET_HASH_NET
+          enable_config_if_defined CONFIG_NETFILTER_XT_SET
+
+          # REJECT 目标在不同内核版本上的符号名可能不同，按实际存在的配置启用
+          enable_config_if_defined CONFIG_NETFILTER_XT_TARGET_REJECT
+          enable_config_if_defined CONFIG_IP_NF_TARGET_REJECT
+
+          echo "Droidspaces 集成完成"
 
       - name: 应用 Unicode 绕过修复
         if: inputs.enable_susfs
@@ -767,9 +848,6 @@ jobs:
           ensure_line_once "$DRIVERS_MAKEFILE" "obj-y += min_kdp.o"
 
           ensure_line_once "$XIAOMI_SYMBOL_LIST" "device_find_any_child"
-
-      - name: 备份原始 defconfig
-        run: cp "$DEFCONFIG" "$DEFCONFIG.orig"
 
       - name: 配置 ZRAM 选项
         if: inputs.use_zram
@@ -886,7 +964,13 @@ jobs:
           EOF
 
           if [ "${{ inputs.ksu_variant }}" == "SukiSU" ] || [ "${{ inputs.ksu_variant }}" == "ReSukiSU" ] || [ "${{ inputs.ksu_variant }}" == "Next" ]; then
-            echo "CONFIG_KPM=y" >> "$DEFCONFIG"
+            if [[ "${{ inputs.use_kpm }}" == enabled* ]] || [[ "${{ inputs.use_kpm }}" == patched* ]]; then
+              if ! grep -RqsE '^[[:space:]]*config[[:space:]]+KPM([[:space:]]|$)' common KernelSU 2>/dev/null; then
+                echo "错误: 已请求启用 KPM，但当前 KernelSU 代码未声明 CONFIG_KPM" >&2
+                exit 1
+              fi
+              echo "CONFIG_KPM=y" >> "$DEFCONFIG"
+            fi
           fi
 
           sed -i 's/check_defconfig//' ./common/build.config.gki
@@ -1019,26 +1103,26 @@ jobs:
             echo "当前 SUSFS 最新提交日期: ${SUSFS_LATEST_COMMIT_DATE}"
             echo "如果日期不同或相差过远则补丁失效、编译失败"
 
-      - name: 应用 KPM 补丁 (SukiSU/ReSukiSU/Next)
-        if: inputs.use_kpm && (inputs.ksu_variant == 'SukiSU' || inputs.ksu_variant == 'ReSukiSU' || inputs.ksu_variant == 'Next')
-        run: |
-          case "${{ inputs.android_version }}" in
-            "android12"|"android13")
-              if [ "${{ inputs.kernel_version }}" != "6.6" ]; then
-                TARGET_PATH="$KERNEL_ROOT/out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist"
-              fi
-              ;;
-            "android14"|"android15"|"android16")
-              TARGET_PATH="$KERNEL_ROOT/bazel-bin/common/kernel_aarch64/"
-              ;;
-          esac
+      # - name: 应用 KPM 补丁 (SukiSU/ReSukiSU/Next)
+      #   if: startsWith(inputs.use_kpm, 'patched') && (inputs.ksu_variant == 'SukiSU' || inputs.ksu_variant == 'ReSukiSU' || inputs.ksu_variant == 'Next')
+      #   run: |
+      #     case "${{ inputs.android_version }}" in
+      #       "android12"|"android13")
+      #         if [ "${{ inputs.kernel_version }}" != "6.6" ]; then
+      #           TARGET_PATH="$KERNEL_ROOT/out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist"
+      #         fi
+      #         ;;
+      #       "android14"|"android15"|"android16")
+      #         TARGET_PATH="$KERNEL_ROOT/bazel-bin/common/kernel_aarch64/"
+      #         ;;
+      #     esac
 
-          cp -r $SUKISU_PATCHES/kpm/patch_linux "$TARGET_PATH/patch"
-          cd "$TARGET_PATH"
-          chmod 777 patch
-          ./patch
-          rm -rf Image
-          mv oImage Image
+      #     cp -r $SUKISU_PATCHES/kpm/patch_linux "$TARGET_PATH/patch"
+      #     cd "$TARGET_PATH"
+      #     chmod 777 patch
+      #     ./patch
+      #     rm -rf Image
+      #     mv oImage Image
 
       - name: 准备 Boot 镜像
         run: |

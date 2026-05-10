@@ -77,9 +77,6 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "Official" ]; then
             echo "This is the Official"
             git clone https://github.com/tiann/KernelSU.git KernelSU
-          elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
-            echo "This is the Official"
-            git clone https://github.com/5ec1cff/KernelSU.git KernelSU
           else
             echo "Unknown variant"
           fi
@@ -95,7 +92,7 @@ jobs:
             KSU_VERSION=$((40000 + KSU_GIT_VERSION - 2815))
           elif [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
             KSU_VERSION=$((30700 + KSU_GIT_VERSION))
-          elif [ "${{ inputs.kernelsu_variant }}" == "Official" ] || [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
+          elif [ "${{ inputs.kernelsu_variant }}" == "Official" ]; then
             KSU_VERSION=$((20000 + KSU_GIT_VERSION))
           elif [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
             KSU_VERSION=$((30000 + KSU_GIT_VERSION))
@@ -124,14 +121,10 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "SukiSU..."
             REPO="SukiSU-Ultra/SukiSU-Ultra"
-            KSUM="Manager"
+            KSUM="manager"
           elif [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
             echo "ReSukiSU..."
             REPO="ReSukiSU/ReSukiSU"
-            KSUM="Manager"
-          elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
-            echo "MKSU..."
-            REPO="5ec1cff/KernelSU"
             KSUM="manager"
           elif [ "${{ inputs.kernelsu_variant }}" == "Official" ]; then
             echo "KSU..."
@@ -178,7 +171,7 @@ jobs:
             if [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
               result=$(echo "$ARTIFACTS" | jq -r ".artifacts[] | select(.name == \"$KSUM\") | .name")
             else
-              result=$(echo "$ARTIFACTS" | jq -r '.artifacts[] | select(.name | contains("'"$KSUM"'")) | .name')
+              result=$(echo "$ARTIFACTS" | jq -r --arg needle "$KSUM" '.artifacts[] | select((.name | ascii_downcase) | contains($needle)) | .name')
             fi
 
             if [ -z "$result" ]; then
@@ -190,7 +183,7 @@ jobs:
               if [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
                 DOWNLOAD_LIST=$(echo "$ARTIFACTS" | jq -r ".artifacts[] | select(.name == \"$KSUM\") | \"\(.name)\t\(.archive_download_url)\"")
               else
-                DOWNLOAD_LIST=$(echo "$ARTIFACTS" | jq -r '.artifacts[] | select(.name | contains("'"$KSUM"'")) | "\(.name)\t\(.archive_download_url)"')
+                DOWNLOAD_LIST=$(echo "$ARTIFACTS" | jq -r --arg needle "$KSUM" '.artifacts[] | select((.name | ascii_downcase) | contains($needle)) | "\(.name)\t\(.archive_download_url)"')
               fi
               break
             fi
