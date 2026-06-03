@@ -15,17 +15,10 @@ on:
           - Official
           #- Next
           - SukiSU
+          - SukiSU(40726)
+          - SukiSU(40548)
           - ReSukiSU
         default: ReSukiSU
-      kernelsu_branch:
-        description: "KSU 分支"
-        required: true
-        type: choice
-        options:
-          - Stable(标准)
-          - Dev(开发)
-          - Other(其他/指定)
-        default: Stable(标准)
       version:
         description: "自定义版本名 (可选)"
         required: false
@@ -52,6 +45,11 @@ on:
           - "off"
           - "on"
         default: "off"
+      droidspaces_ntsync:
+        description: "启用 Droidspaces 容器 NTSync 支持（需启用 Droidspaces）"
+        required: false
+        type: boolean
+        default: false
       use_zram:
         description: "启用 ZRAM 增强算法"
         required: true
@@ -82,9 +80,6 @@ on:
       kernelsu_variant:
         required: true
         type: string
-      kernelsu_branch:
-        required: true
-        type: string
       version:
         required: false
         type: string
@@ -115,6 +110,10 @@ on:
         required: false
         type: string
         default: "off"
+      droidspaces_ntsync:
+        required: false
+        type: boolean
+        default: false
       called_from_main:
         description: "是否从 main.yml 调用（内部使用）"
         required: false
@@ -146,7 +145,6 @@ jobs:
       sub_level: ${{ matrix.sub_level }}
       os_patch_level: ${{ matrix.os_patch_level }}
       ksu_variant: ${{ inputs.kernelsu_variant }}
-      ksu_branch: ${{ inputs.kernelsu_branch }}
       version: ${{ inputs.version || '' }}
       build_time: ${{ inputs.build_time || '' }}
       use_zram: false
@@ -156,6 +154,7 @@ jobs:
       supp_op: ${{ inputs.supp_op || false }}
       enable_susfs: ${{ !inputs.cancel_susfs }}
       droidspaces: ${{ inputs.droidspaces || 'off' }}
+      droidspaces_ntsync: ${{ inputs.droidspaces_ntsync || false }}
 
   # 仅在直接触发时运行，从 main.yml 调用时跳过
   get-ksu-manager:

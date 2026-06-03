@@ -55,17 +55,10 @@ on:
           - Official
           #- Next
           - SukiSU
+          - SukiSU(40726)
+          - SukiSU(40548)
           - ReSukiSU
         default: ReSukiSU
-      kernelsu_branch:
-        description: "KSU 分支"
-        required: true
-        type: choice
-        options:
-          - Stable(标准)
-          - Dev(开发)
-          - Other(其他/指定)
-        default: Stable(标准)
 
       # ==================== 可选配置 ====================
       version:
@@ -98,6 +91,11 @@ on:
           - "123"
           - "345"
         default: "off"
+      droidspaces_ntsync:
+        description: "启用 Droidspaces 容器 NTSync 支持（需启用 Droidspaces）"
+        required: false
+        type: boolean
+        default: false
 
       # ==================== 功能开关 ====================
       use_zram:
@@ -138,7 +136,6 @@ jobs:
       os_patch_level: ${{ inputs.os_patch_level }}
       revision: ${{ inputs.revision || '' }}
       ksu_variant: ${{ inputs.kernelsu_variant }}
-      ksu_branch: ${{ inputs.kernelsu_branch }}
       version: ${{ inputs.version || '' }}
       build_time: ${{ inputs.build_time || '' }}
       use_zram: ${{ inputs.use_zram }}
@@ -148,6 +145,7 @@ jobs:
       supp_op: ${{ inputs.supp_op || false }}
       enable_susfs: ${{ !inputs.cancel_susfs }}
       droidspaces: ${{ inputs.droidspaces || 'off' }}
+      droidspaces_ntsync: ${{ inputs.droidspaces_ntsync || false }}
 
   get-ksu-manager:
     uses: ./.github/workflows/get-manager.yml
